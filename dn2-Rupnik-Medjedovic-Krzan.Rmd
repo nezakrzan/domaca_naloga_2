@@ -1,0 +1,179 @@
+---
+title: "2. domaca naloga"
+author: "Tom Rupnik Medjedovic in Neza Krzan"
+fontsize: 12pt
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+subtitle: Bayesova statistika
+header-includes:
+- \usepackage[slovene]{babel}
+- \usepackage{float}
+- \usepackage[T1]{fontenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(123)
+```
+
+_Za primer iz 3. sklopa (uporabite zgornje podatke, model z $\sigma^2=0.1^2$ in zgornjo apriorno porazdelitev z $\mu_0=1.78$ in $\sigma_0^2 = 0.2^2$ -- ti parametri so fiksni) aproksimirajte aposteriorno porazdelitev s pomocjo algoritma Metropolis-Hastings, kjer sledite spodnjim korakom._
+
+# Algoritem Metropolis-Hastings za ocenjevanje enega parametra
+_1. Sami v R-u sprogramirajte algoritem Metropolis-Hastings za primer ocenjevanja enega parametra oz. za nas primer. Kljucno je, da ga sprogramirate sami, pri cemer splosnost kode in efektivnost implementacije nista pomembni. (Za ta preprost primer boste npr. 40000 iteracij dobili v zelo kratkem casu, ne glede na izbor parametrov v spodnjih tockah ali efektivnost implementacije.)_
+
+```{r funkcije potrebne za algoritem, message=FALSE, warning=FALSE}
+# Funkcija verjetja
+verjetje <- function(theta, x, sigma){
+  #cleni <- 1/(sqrt(2*pi)*sigma)* exp(-(x-theta)^2/(2*sigma^2))
+  #return(prod(cleni))
+  return(prod(dnorm(x, theta, sigma)))
+}
+
+# Apriorna porazdelitev
+apriorna_porazdelitev <- function(theta, mu_0, sigma_0){
+  return(dnorm(theta, mu_0, sigma_0))
+}
+```
+
+```{r algoritem, message=FALSE, warning=FALSE}
+metropolis_hastings <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0){
+  # n_itr = ponovitve
+  # x = podatki
+  # theta_zacetek = theta s katero zacnemo in jo posodabljamo
+  # sigma = sigma zacetnega modela
+  # mu_0 in sigma_0 = parametra apriorne porazdelitve
+  
+  # Prazen vektor za shranjevanje
+  theta <- numeric(n_itr)
+  # Zacetna vrednost thete
+  theta[1] <- theta_zacetek
+    
+  for(i in 2:n_itr){
+    # Nova theta
+    theta_zvezdica <- rnorm(1, theta[i - 1], sigma)
+        
+    # aposteriorna in verjetje s theta_zvezdica
+    aposteriorna_zvezdica <- apriorna_porazdelitev(theta_zvezdica, mu_0, sigma_0)
+    verjetje_zvezdica <- verjetje(theta_zvezdica, x, sigma)
+        
+    # aposteriorna in verjetje s theta_i
+    aposteriorna_i <- apriorna_porazdelitev(theta[i - 1], mu_0, sigma_0)
+    verjetje_i <- verjetje(theta[i - 1], x, sigma)
+        
+    # alpha
+    alpha <- (aposteriorna_zvezdica * verjetje_zvezdica) / (aposteriorna_i * verjetje_i)
+         
+    # sprejmemo ali zavrnemo
+    if(runif(1) < alpha){
+        theta[i] <- theta_zvezdica # "accept" -> min(1, A)
+        } 
+    else{
+      theta[i] <- theta[i - 1] # "reject"  -> theta_i
+      }
+    }
+
+  return(theta)
+}
+
+```
+
+# Preizkus algoritma
+_2. Preizkusite ga na nasem primeru, kjer si sami izberite neko smiselno zacetno vrednost in varianco predlagalne porazdelitve. Rezultate predstavite na naslednji nacin:_
+   _+ Narisite celotno dobljeno zaporedje $\theta^{(i)}$ (glede na iteracije $i$)._
+   _+ Narisite le prvih 500 ali pa 5000 clenov._
+   _+ Narisite celotno zaporedje, kjer uporabite ustrezen *burn-in*._
+   _+ Za tako izbrano zaporedje graficno predstavite aposteriorno porazdelitev in jo graficno primerjajte s pravo aposteriorno porazdelitvijo._
+   _+ Ocenite parameter in 95% interval zaupanja za parameter iz izbranega zaporedja ter primerjajte z ocenami iz prave aposterirone porazdelitve._
+   
+Najprej algoritem stestirava na podatkih iz vaj, z naslednjimi vrednostmi\
+$n_itr=40000,$\
+$x \dots$ vzorec visin (metri) studentov moskega spola \
+$\theta^0 = 1.5,$\
+$\sigma^2=0.1^2,$\
+$\mu_0 = 1.78,$\
+$\sigma_0^2 = 0.2^2,$\
+kjer $\theta^0$ predstavlja zacetni $\theta$, ki ga predlagamo v algoritmu in $\sigma$ predstavlja varianco predlagalne porazdelitve.
+ 
+```{r testiranje algoritma, message=FALSE, warning=FALSE}
+# Nastavitev parametrov
+n_itr <- 40000 
+
+x <- c(1.91, 1.94, 1.68, 1.75, 1.81, 1.83, 1.91, 1.95, 1.77, 1.98, 
+       1.81, 1.75, 1.89, 1.89, 1.83, 1.89, 1.99, 1.65, 1.82, 1.65, 
+       1.73, 1.73, 1.88, 1.81, 1.84, 1.83, 1.84, 1.72, 1.91, 1.63)
+
+theta_zacetek <- 1.5
+
+sigma <- 0.1
+mu_0 <- 1.78
+sigma_0 <- 0.2
+
+# Test algoritma
+theta <- metropolis_hastings(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
+
+```
+
+## Graf celotnega zaporedja
+Narisemo celotno dobljeno zaporedje $\theta^{(i)}$ (glede na iteracije $i$).
+```{r graf, echo=TRUE, fig.align="center", fig.height=4, message=FALSE, warning=FALSE}
+df <- data.frame(theta = theta)
+
+library(ggplot2)
+ggplot(df, aes(x=1:nrow(df), y=theta)) +
+    geom_line() +
+    labs(title="Celotno dobljeno zaporedje (glede na iteracije i)",
+         x="Indeks",
+         y=expression(theta))
+```
+
+## Prvih 500 in 5000 clenov zaporedja
+Graf prvih 500 in 5000 clenov.
+```{r prvi cleni, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+library(knitr)
+library(dplyr)
+
+g1 <- ggplot(df %>% slice(1:500), aes(x=1:500, y=theta)) +
+    geom_line() +
+    labs(title="",
+         x="Indeks",
+         y=expression(theta))
+
+g2 <-ggplot(df %>% slice(1:5000), aes(x=1:5000, y=theta)) +
+    geom_line() +
+    labs(title="",
+         x="Indeks",
+         y=expression(theta))
+
+library(ggpubr)
+ggarrange(g1, g2,
+          labels = c("Prvih 500 clenov zaporedja", 
+                     "Prvih 5000 clenov zaporedja"),
+          font.label = list(size = 10),
+          ncol = 2)
+```
+
+## Celotno zaporedje z ustreznim _burn-in_
+```{r}
+
+```
+
+
+
+
+
+```{r}
+# Prava aposteriorna porazdelitev
+n <- length(x)
+
+prec <- 1/sigma^2 
+prec0 <- 1/sigma_0^2
+prec.n <- prec0 + n*prec 
+sigma.n <- sqrt(1/prec.n)
+
+mu.n <- prec0/prec.n * mu_0 + n*prec/prec.n * mean(x)
+```
+
+
+
