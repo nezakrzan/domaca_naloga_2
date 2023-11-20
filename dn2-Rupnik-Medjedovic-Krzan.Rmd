@@ -122,6 +122,18 @@ theta <- metropolis_hastings(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
 
 ```
 
+```{r}
+# Prava aposteriorna porazdelitev
+n <- length(x)
+
+prec <- 1/sigma^2 
+prec0 <- 1/sigma_0^2
+prec.n <- prec0 + n*prec 
+sigma.n <- sqrt(1/prec.n)
+
+mu.n <- prec0/prec.n * mu_0 + n*prec/prec.n * mean(x)
+```
+
 ## Graf celotnega zaporedja
 Narisemo celotno dobljeno zaporedje $\theta^{(i)}$ (glede na iteracije $i$).
 ```{r graf, echo=TRUE, fig.align="center", fig.height=4, message=FALSE, warning=FALSE}
@@ -132,7 +144,10 @@ ggplot(df, aes(x=1:nrow(df), y=theta)) +
     geom_line() +
     labs(title="Celotno dobljeno zaporedje (glede na iteracije i)",
          x="Indeks",
-         y=expression(theta))
+         y=expression(theta)) +
+    # zelena crta
+    geom_hline(yintercept = c(qnorm(0.025, mu.n, sigma.n),qnorm(0.975, mu.n, sigma.n)),
+               color = "green")
 ```
 
 ## Prvih 500 in 5000 clenov zaporedja
@@ -163,24 +178,67 @@ ggarrange(g1, g2,
 
 ## Celotno zaporedje z ustreznim _burn-in_
 ```{r}
+metropolis_hastings_burn_in <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0, burn_in = FALSE){
+  # n_itr = ponovitve
+  # x = podatki
+  # theta_zacetek = theta s katero zacnemo in jo posodabljamo
+  # sigma = sigma zacetnega modela
+  # mu_0 in sigma_0 = parametra apriorne porazdelitve
+  
+  # Prazen vektor za shranjevanje
+  theta <- numeric(n_itr)
+  # Zacetna vrednost thete
+  theta[1] <- theta_zacetek
+    
+  for(i in 2:n_itr){
+    # Nova theta
+    theta_zvezdica <- rnorm(1, theta[i - 1], sigma)
+        
+    # aposteriorna in verjetje s theta_zvezdica
+    aposteriorna_zvezdica <- apriorna_porazdelitev(theta_zvezdica, mu_0, sigma_0)
+    verjetje_zvezdica <- verjetje(theta_zvezdica, x, sigma)
+    q_zvezdica <- q(theta[i - 1], theta_zvezdica, sigma)
+        
+    # aposteriorna in verjetje s theta_i
+    aposteriorna_i <- apriorna_porazdelitev(theta[i - 1], mu_0, sigma_0)
+    verjetje_i <- verjetje(theta[i - 1], x, sigma)
+    q_i <- q(theta_zvezdica, theta[i - 1], sigma)
+        
+    # alpha
+    alpha <- min(1, (aposteriorna_zvezdica * verjetje_zvezdica * q_zvezdica) / (aposteriorna_i * verjetje_i * q_i))
+         
+    # sprejmemo ali zavrnemo
+    if(runif(1) < alpha){
+        theta[i] <- theta_zvezdica # "accept" -> min(1, A)
+        } 
+    else{
+      theta[i] <- theta[i - 1] # "reject"  -> theta_i
+      }
+    }
+  
+  # v primeru burn in (odstranimo prvih 10% vzorca)
+  n_burn_in = n_itr*0.1
+  theta = theta[n_burn_in:length(theta)]
+  
+  return(theta)
+}
 
+
+# Test algoritma
+theta <- metropolis_hastings_burn_in(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
+
+# risanje
+df <- data.frame(theta = theta)
+ggplot(df, aes(x=1:length(theta), y=theta)) +
+    geom_line() +
+    labs(title="Dobljeno zaporednje (prvih 10% zaporednja kot burn-in)",
+         x="Indeks",
+         y=expression(theta)) +
+    # zelena crta
+    geom_hline(yintercept = c(qnorm(0.025, mu.n, sigma.n),qnorm(0.975, mu.n, sigma.n)),
+               color = "green")
 ```
 
-
-
-
-
-```{r}
-# Prava aposteriorna porazdelitev
-n <- length(x)
-
-prec <- 1/sigma^2 
-prec0 <- 1/sigma_0^2
-prec.n <- prec0 + n*prec 
-sigma.n <- sqrt(1/prec.n)
-
-mu.n <- prec0/prec.n * mu_0 + n*prec/prec.n * mean(x)
-```
 
 
 
