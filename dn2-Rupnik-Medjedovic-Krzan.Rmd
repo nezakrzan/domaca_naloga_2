@@ -35,6 +35,11 @@ verjetje <- function(theta, x, sigma){
 apriorna_porazdelitev <- function(theta, mu_0, sigma_0){
   return(dnorm(theta, mu_0, sigma_0))
 }
+
+#q funkcija
+q <- function(theta_zvezdica, theta, sigma) { 
+  return(dnorm(theta_zvezdica, theta, sigma))
+}
 ```
 
 ```{r algoritem, message=FALSE, warning=FALSE}
@@ -57,13 +62,15 @@ metropolis_hastings <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0){
     # aposteriorna in verjetje s theta_zvezdica
     aposteriorna_zvezdica <- apriorna_porazdelitev(theta_zvezdica, mu_0, sigma_0)
     verjetje_zvezdica <- verjetje(theta_zvezdica, x, sigma)
+    q_zvezdica <- q(theta[i - 1], theta_zvezdica, sigma)
         
     # aposteriorna in verjetje s theta_i
     aposteriorna_i <- apriorna_porazdelitev(theta[i - 1], mu_0, sigma_0)
     verjetje_i <- verjetje(theta[i - 1], x, sigma)
+    q_i <- q(theta_zvezdica, theta[i - 1], sigma)
         
     # alpha
-    alpha <- (aposteriorna_zvezdica * verjetje_zvezdica) / (aposteriorna_i * verjetje_i)
+    alpha <- min(1, (aposteriorna_zvezdica * verjetje_zvezdica * q_zvezdica) / (aposteriorna_i * verjetje_i * q_i))
          
     # sprejmemo ali zavrnemo
     if(runif(1) < alpha){
