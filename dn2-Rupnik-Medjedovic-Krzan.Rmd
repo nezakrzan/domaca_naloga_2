@@ -16,6 +16,13 @@ header-includes:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 set.seed(123)
+
+# Potrebne knjiznice
+library(ggplot2)
+library(knitr)
+library(dplyr)
+library(ggpubr)
+library(kableExtra)
 ```
 
 _Za primer iz 3. sklopa (uporabite zgornje podatke, model z $\sigma^2=0.1^2$ in zgornjo apriorno porazdelitev z $\mu_0=1.78$ in $\sigma_0^2 = 0.2^2$ -- ti parametri so fiksni) aproksimirajte aposteriorno porazdelitev s pomocjo algoritma Metropolis-Hastings, kjer sledite spodnjim korakom._
@@ -95,7 +102,7 @@ _2. Preizkusite ga na nasem primeru, kjer si sami izberite neko smiselno zacetno
    _- Ocenite parameter in 95% interval zaupanja za parameter iz izbranega zaporedja ter primerjajte z ocenami iz prave aposterirone porazdelitve._\
    
 Najprej algoritem stestirava na podatkih iz vaj, z naslednjimi vrednostmi\
-$n_itr=40000,$\
+$n_{itr}=40000,$\
 $x \dots$ vzorec visin (metri) studentov moskega spola \
 $\theta^0 = 1.5,$\
 $\sigma^2=0.1^2,$\
@@ -139,7 +146,6 @@ Narisemo celotno dobljeno zaporedje $\theta^{(i)}$ (glede na iteracije $i$).
 ```{r graf, echo=TRUE, fig.align="center", fig.height=4, message=FALSE, warning=FALSE}
 df <- data.frame(theta = theta)
 
-library(ggplot2)
 ggplot(df, aes(x=1:nrow(df), y=theta)) +
     geom_line() +
     labs(title="Celotno dobljeno zaporedje (glede na iteracije i)",
@@ -159,9 +165,6 @@ Na sliki sva za boljso predstavo oznacila 95% referencni interval prave aposteri
 ## Prvih 500 in 5000 clenov zaporedja
 Graf prvih 500 in 5000 clenov.
 ```{r prvi cleni, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
-library(knitr)
-library(dplyr)
-
 g1 <- ggplot(df %>% slice(1:500), aes(x=1:500, y=theta)) +
     geom_line() +
     labs(title="",
@@ -184,7 +187,6 @@ g2 <-ggplot(df %>% slice(1:5000), aes(x=1:5000, y=theta)) +
               axis.line = element_line(colour = "black"),
           legend.position = "none") 
 
-library(ggpubr)
 ggarrange(g1, g2,
           labels = c("Prvih 500 clenov zaporedja", 
                      "Prvih 5000 clenov zaporedja"),
@@ -292,7 +294,6 @@ primerjava <- cbind(mh_alg, ocena_pap)
 colnames(primerjava) <- c("Povprecje", "2.5%", "97.5%")
 rownames(primerjava) <- c("Metropolis-Hastings algoritem", "Ocena iz prave aposteriorne porazdelitve")
 
-library(kableExtra)
 kable(primerjava, digits=5, booktabs=T) %>% 
     kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
 
@@ -323,20 +324,19 @@ Vidiva, da je problem v if stavku pri primerjavi `runif(1)` in `alpha` ($\alpha$
 
   `alpha <- min(1, (aposteriorna_zvezdica * verjetje_zvezdica * q_zvezdica) / (aposteriorna_i * verjetje_i * q_i))`. 
 
-Problem lahko nastane, ko je kaksen izmed clenov `aposteriorna_i`, `verjetje_i` ali `q_i` enak $0$, saj potem pride do deljenja z $0$. Ce pogledamo kaj vrnejo te funkcije v primeru $\theta_{\text{zacetek}} = 0$
-```{r}
+Problem lahko nastane, ko je kaksen izmed clenov `aposteriorna_i` in `verjetje_i` enak $0$, saj potem pride do deljenja z $0$. Ce pogledamo kaj vrnejo te funkcije v primeru $\theta_{\text{zacetek}} = 0$
+```{r nic vrednost, message=FALSE, warning=FALSE}
 verjetje(0, x, sigma)
 apriorna_porazdelitev(0, mu_0, sigma_0)
-q(theta_zvezdica, 0, sigma)
 ```
 
 Vidimo, da je verjetje enako $0$, torej takoj delimo z $0$. Zato bomo celoten algoritem implementirali z logaritomom, da bo delovalo tudi pri zelo nesmiselnih zacetnih vrednostih.
 
 Najprej ustrezno implementirava vse potrebne funkcije za algoritem.
-```{r funkcije potrebne za algoritem, message=FALSE, warning=FALSE}
+```{r funkcije potrebne za algoritem z log, message=FALSE, warning=FALSE}
 # Funkcija verjetja
 verjetje_log <- function(theta, x, sigma){
-    return(sum(dnorm(x, theta, sig_like, log=TRUE)))
+    return(sum(dnorm(x, theta, sigma, log=TRUE)))
 }
 
 # Apriorna porazdelitev
@@ -351,6 +351,7 @@ q_log <- function(theta_zvezdica, theta, sigma){
 
 ```
 
+nato pa se algoritem
 ```{r implementiran, message=FALSE, warning=FALSE}
 metropolis_hastings_log <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0){
   # n_itr = ponovitve
@@ -368,17 +369,17 @@ metropolis_hastings_log <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_
     # Nova theta
     theta_zvezdica <- rnorm(1, theta[i - 1], sigma)
         
-    # aposteriorna in verjetje s theta_zvezdica
+    # aposteriorna in verjetje s theta_zvezdica (uporabiva implementirane funkcije)
     aposteriorna_zvezdica <- apriorna_porazdelitev_log(theta_zvezdica, mu_0, sigma_0)
     verjetje_zvezdica <- verjetje_log(theta_zvezdica, x, sigma)
     q_zvezdica <- q_log(theta[i - 1], theta_zvezdica, sigma)
         
-    # aposteriorna in verjetje s theta_i
+    # aposteriorna in verjetje s theta_i (uporabiva implementirane funkcije)
     aposteriorna_i <- apriorna_porazdelitev_log(theta[i - 1], mu_0, sigma_0)
     verjetje_i <- verjetje_log(theta[i - 1], x, sigma)
     q_i <- q_log(theta_zvezdica, theta[i - 1], sigma)
         
-    # alpha
+    # alpha(tukaj se spremeni, + nadomesti * in - nadomesti /)
     alpha <- min(1, exp((aposteriorna_zvezdica + verjetje_zvezdica + q_zvezdica) - (aposteriorna_i + verjetje_i + q_i)))
          
     # sprejmemo ali zavrnemo
@@ -399,7 +400,7 @@ theta <- metropolis_hastings_log(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
 
 ## Graf celotnega zaporedja
 Ponovno algoritem stestirava na podatkih iz vaj, z naslednjimi vrednostmi\
-$n_itr=40000,$\
+$n_{itr}=40000,$\
 $x \dots$ vzorec visin (metri) studentov moskega spola \
 $\theta^0 = 1.5,$\
 $\sigma^2=0.1^2,$\
@@ -407,7 +408,7 @@ $\mu_0 = 1.78,$\
 $\sigma_0^2 = 0.2^2,$\.
 
 Narisemo celotno dobljeno zaporedje $\theta^{(i)}$ (glede na iteracije $i$).
-```{r graf, echo=TRUE, fig.align="center", fig.height=4, message=FALSE, warning=FALSE}
+```{r graf z log, echo=TRUE, fig.align="center", fig.height=4, message=FALSE, warning=FALSE}
 theta_zacetek <- 1.5
 theta <- metropolis_hastings_log(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
 
@@ -432,7 +433,7 @@ Na sliki sva za boljso predstavo oznacila 95% referencni interval prave aposteri
 
 ## Prvih 500 in 5000 clenov zaporedja
 Graf prvih 500 in 5000 clenov.
-```{r prvi cleni, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+```{r prvi cleni z log, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 g1 <- ggplot(df_log %>% slice(1:500), aes(x=1:500, y=theta)) +
     geom_line() +
     labs(title="",
@@ -463,7 +464,7 @@ ggarrange(g1, g2,
 ```
 
 ## Celotno zaporedje z ustreznim _burn-in_
-```{r metropolis_hastings_burn_in algoritem, message=FALSE, warning=FALSE}
+```{r metropolis_hastings_burn_in algoritem z log, message=FALSE, warning=FALSE}
 metropolis_hastings_log_burn_in <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0, burn_in = FALSE){
   # n_itr = ponovitve
   # x = podatki
@@ -485,7 +486,7 @@ metropolis_hastings_log_burn_in <- function(n_itr, x, theta_zacetek, sigma, mu_0
 theta <- metropolis_hastings_log_burn_in(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
 ```
 
-```{r graf burn-in, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+```{r graf burn-in z log, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 # Risanje
 df_log_burnin <- data.frame(theta = theta)
 
