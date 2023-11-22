@@ -87,12 +87,12 @@ metropolis_hastings <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0){
 ```
 
 # Preizkus algoritma
-_2. Preizkusite ga na nasem primeru, kjer si sami izberite neko smiselno zacetno vrednost in varianco predlagalne porazdelitve. Rezultate predstavite na naslednji nacin:_
-   _+ Narisite celotno dobljeno zaporedje $\theta^{(i)}$ (glede na iteracije $i$)._
-   _+ Narisite le prvih 500 ali pa 5000 clenov._
-   _+ Narisite celotno zaporedje, kjer uporabite ustrezen *burn-in*._
-   _+ Za tako izbrano zaporedje graficno predstavite aposteriorno porazdelitev in jo graficno primerjajte s pravo aposteriorno porazdelitvijo._
-   _+ Ocenite parameter in 95% interval zaupanja za parameter iz izbranega zaporedja ter primerjajte z ocenami iz prave aposterirone porazdelitve._
+_2. Preizkusite ga na nasem primeru, kjer si sami izberite neko smiselno zacetno vrednost in varianco predlagalne porazdelitve. Rezultate predstavite na naslednji nacin:_\
+   _- Narisite celotno dobljeno zaporedje $\theta^{(i)}$ (glede na iteracije $i$)._\
+   _- Narisite le prvih 500 ali pa 5000 clenov._\
+   _- Narisite celotno zaporedje, kjer uporabite ustrezen *burn-in*._\
+   _- Za tako izbrano zaporedje graficno predstavite aposteriorno porazdelitev in jo graficno primerjajte s pravo aposteriorno porazdelitvijo._\
+   _- Ocenite parameter in 95% interval zaupanja za parameter iz izbranega zaporedja ter primerjajte z ocenami iz prave aposterirone porazdelitve._\
    
 Najprej algoritem stestirava na podatkih iz vaj, z naslednjimi vrednostmi\
 $n_itr=40000,$\
@@ -122,7 +122,7 @@ theta <- metropolis_hastings(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
 
 ```
 
-```{r}
+```{r prava aposteriorna porazdelitev, message=FALSE, warning=FALSE}
 # Prava aposteriorna porazdelitev
 n <- length(x)
 
@@ -147,8 +147,14 @@ ggplot(df, aes(x=1:nrow(df), y=theta)) +
          y=expression(theta)) +
     # zelena crta
     geom_hline(yintercept = c(qnorm(0.025, mu.n, sigma.n),qnorm(0.975, mu.n, sigma.n)),
-               color = "green")
+               color = "green") +
+    theme_bw() + 
+    theme(panel.border = element_blank(),
+              panel.grid.minor = element_blank(), 
+              axis.line = element_line(colour = "black"),
+          legend.position = "none") 
 ```
+Na sliki sva za boljso predstavo oznacila 95% referencni interval prave aposterirone porazdelitve (zeleni crti).
 
 ## Prvih 500 in 5000 clenov zaporedja
 Graf prvih 500 in 5000 clenov.
@@ -160,25 +166,193 @@ g1 <- ggplot(df %>% slice(1:500), aes(x=1:500, y=theta)) +
     geom_line() +
     labs(title="",
          x="Indeks",
-         y=expression(theta))
+         y=expression(theta)) +
+    theme_bw() + 
+    theme(panel.border = element_blank(),
+              panel.grid.minor = element_blank(), 
+              axis.line = element_line(colour = "black"),
+          legend.position = "none") 
 
 g2 <-ggplot(df %>% slice(1:5000), aes(x=1:5000, y=theta)) +
     geom_line() +
     labs(title="",
          x="Indeks",
-         y=expression(theta))
+         y=expression(theta)) +
+    theme_bw() + 
+    theme(panel.border = element_blank(),
+              panel.grid.minor = element_blank(), 
+              axis.line = element_line(colour = "black"),
+          legend.position = "none") 
 
 library(ggpubr)
 ggarrange(g1, g2,
           labels = c("Prvih 500 clenov zaporedja", 
                      "Prvih 5000 clenov zaporedja"),
           font.label = list(size = 10),
-          ncol = 2)
+          ncol = 2) 
 ```
 
 ## Celotno zaporedje z ustreznim _burn-in_
-```{r}
+```{r metropolis_hastings_burn_in algoritem, message=FALSE, warning=FALSE}
 metropolis_hastings_burn_in <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0, burn_in = FALSE){
+  # n_itr = ponovitve
+  # x = podatki
+  # theta_zacetek = theta s katero zacnemo in jo posodabljamo
+  # sigma = sigma zacetnega modela
+  # mu_0 in sigma_0 = parametra apriorne porazdelitve
+  
+  # pridobimo theto
+  metropolis_hastings(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
+  
+  # v primeru burn in (odstranimo prvih 10% vzorca)
+  n_burn_in = n_itr*0.1
+  theta = theta[n_burn_in:length(theta)]
+  
+  return(theta)
+}
+
+# Test algoritma
+theta <- metropolis_hastings_burn_in(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
+```
+
+```{r graf burn-in, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+# Risanje
+df_burnin <- data.frame(theta = theta)
+
+ggplot(df_burnin, aes(x=1:length(theta), y=theta)) +
+    geom_line() +
+    labs(title="Dobljeno zaporednje (prvih 10% zaporednja kot burn-in)",
+         x="Indeks",
+         y=expression(theta)) +
+    # zelena crta
+    geom_hline(yintercept = c(qnorm(0.025, mu.n, sigma.n),qnorm(0.975, mu.n, sigma.n)),
+               color = "green") +
+    theme_bw() + 
+    theme(panel.border = element_blank(),
+              panel.grid.minor = element_blank(), 
+              axis.line = element_line(colour = "black"),
+          legend.position = "none")
+  
+```
+
+Na sliki sva za boljso predstavo oznacila 95% referencni interval prave aposterirone porazdelitve (zeleni crti).
+
+## Aposteriorna porazdelitev in primerjava s pravo aposteriorno porazdelitvijo
+Za tako izbrano zaporedje sva graficno predstavila aposteriorno porazdelitev in jo graficno primerjajla s pravo aposteriorno porazdelitvijo.
+
+```{r graf - aposteriorna porazdelitev in prava aposteriorna porazdelitev, eval=TRUE, echo=FALSE, fig.align="center", fig.height=4, message=FALSE, warning=FALSE, results="markup"}
+#ggplot(df %>% slice(501:n()), aes(x=theta)) +
+    #geom_histogram(fill = "grey", color = "black") +
+    #labs(x=expression(theta),
+         #y="Frekvenca",
+         #title="Aposteriorna porazdelitev",
+         #subtitle="pridobljena z Metropolis-Hastings algoritmom brez burn-in dela") +
+    #theme_bw() + 
+    #theme(panel.border = element_blank(),
+              #panel.grid.minor = element_blank(), 
+              #axis.line = element_line(colour = "black"),
+          #legend.position = "none")
+
+# Ne vem cist tocno al rabva aposteriorno samo predstavt graficno al lahko vse skup v enem grafu, zato je zgori graf zakomentiran
+
+# Graf aposteriorne porazdelitve in prave aposteriorne porazdelitve
+ggplot(df %>% slice(501:n()), aes(x=theta)) +
+    geom_histogram(aes(x = theta, y = ..density..), fill = "grey", color = "black") + 
+    geom_density(color = "red", aes(colour = "MCMC"), show_guide=FALSE) +
+    stat_function(fun = dnorm, args = list(mean=mu.n, sd=sigma.n), aes(colour = "prava")) +
+    labs(x=expression(theta),
+         y="Gostota",
+         title="Aposteriorni porazdelitvi",
+         subtitle="pridobljena z MH algoritmom (brez burn-in) in prava aposteriorna porazdelitev") +
+  theme(legend.position = "topright") + 
+  scale_color_manual(name = "", 
+                     values = c("prava" = "green", "MCMC" = "red"),
+                     labels = c("prava", "MCMC")) +
+  stat_density(aes(colour="MCMC"), geom="line", position="identity") +
+  theme_bw() + 
+  theme(panel.border = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+```
+
+
+## Ocena parametra in 95% interval zaupanja za parameter
+Poglejmo si se oceno za parameter $\theta$ in pripadajoc interval zaupanja za nas algoritem. Zaradi simetrinosti porazdelitve lahko sva za oceno parametra $\theta$ izbrala povprecje.
+
+```{r ocena parametra in IZ, message=FALSE, warning=FALSE}
+mh_alg <- rbind(mean(df %>% slice(1001:n()) %>% unlist()), mu.n)
+
+ocena_pap <- rbind(quantile(df %>% slice(1001:n()) %>% 
+                         unlist(), probs=c(0.025, 0.975)), 
+              c(qnorm(0.025, mean=mu.n, sd=sigma.n), qnorm(0.975, mean=mu.n, sd=sigma.n)))
+
+primerjava <- cbind(mh_alg, ocena_pap)
+
+colnames(primerjava) <- c("Povprecje", "2.5%", "97.5%")
+rownames(primerjava) <- c("Metropolis-Hastings algoritem", "Ocena iz prave aposteriorne porazdelitve")
+
+library(kableExtra)
+kable(primerjava, digits=5, booktabs=T) %>% 
+    kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
+
+```
+
+# Zacetna vrednost $\theta$
+_3. Pozenite vas algoritem pri neki nesmiselni zacetni vrednosti. **Pozor:** ce boste $\alpha$ implementirali po formuli iz str. 2, potem algoritem pri zelo nesmiselnih zacetnih vrednostih ne bo deloval -- zato je potrebno implementirati na ravni logaritma (primerno prilagodite korake algoritma).  Rezultate predstavite:_\
+   _- Za visje tocke domace naloge: Opisite, zakaj konkretno so se pojavile tezave, ce ste uporabili zelo nesmiselno zacetno vrednost in osnovno verzijo algoritma (brez logaritmiranja). Algoritem ustrezno implementirajte tako, da bo deloval tudi pri zelo nesmiselnih zacetnih vrednostih._\
+   _- Ce zgornje ne uspete narediti, pustite algoritem v osnovni varianti in izberite nekoliko manj nesmiselno zacetno vrednost._\
+   _- Narisite celotno dobljeno zaporedje $\theta^{(i)}$ (glede na iteracije $i$)._\
+   _- Narisite le prvih 500 ali pa 5000 clenov._\
+   _- Narisite celotno zaporedje, kjer uporabite ustrezen *burn-in*._
+   
+Glede na to, da nas zanima visina studentov moskega spola, sva si za nesmiselno zacetno vrednost izbrala $\theta_{\text{zacetek}} = 0$, saj je nemogoce, da bi bila visina $0$. Vsi ostali parametri ostanejo enaki kot prej. Pri zagonu funkcije
+```{r nesmiselne zacetne vrednosti, message=FALSE, warning=FALSE}
+# Nastavim nesmiselno zacetno theto, ostali parametri ostanejo enako
+theta_zacetek <- 0
+# zakomentirano, da se koda ne izvede
+#theta <- metropolis_hastings(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
+
+```
+
+se pojavi napaka
+
+  `Error in if (runif(1) < alpha) { : missing value where TRUE/FALSE needed`.
+  
+Vidiva, da je problem v if stavku pri primerjavi `runif(1)` in `alpha` ($\alpha$). V `runif(1)` ne more biti tezava, torej je problem le v izracunu $\alpha$. Nacin, kako sva izracunala $\alpha$ je naslednji
+
+  `alpha <- min(1, (aposteriorna_zvezdica * verjetje_zvezdica * q_zvezdica) / (aposteriorna_i * verjetje_i * q_i))`. 
+
+Problem lahko nastane, ko je kaksen izmed clenov `aposteriorna_i`, `verjetje_i` ali `q_i` enak $0$, saj potem pride do deljenja z $0$. Ce pogledamo kaj vrnejo te funkcije v primeru $\theta_{\text{zacetek}} = 0$
+```{r}
+verjetje(0, x, sigma)
+apriorna_porazdelitev(0, mu_0, sigma_0)
+q(theta_zvezdica, 0, sigma)
+```
+
+Vidimo, da je verjetje enako $0$, torej takoj delimo z $0$. Zato bomo celoten algoritem implementirali z logaritomom, da bo delovalo tudi pri zelo nesmiselnih zacetnih vrednostih.
+
+Najprej ustrezno implementirava vse potrebne funkcije za algoritem.
+```{r funkcije potrebne za algoritem, message=FALSE, warning=FALSE}
+# Funkcija verjetja
+verjetje_log <- function(theta, x, sigma){
+    return(sum(dnorm(x, theta, sig_like, log=TRUE)))
+}
+
+# Apriorna porazdelitev
+apriorna_porazdelitev_log <- function(theta, mu_0, sigma_0){
+  return(dnorm(theta, mu_0, sigma_0, log=TRUE))
+}
+
+#q funkcija
+q_log <- function(theta_zvezdica, theta, sigma){ 
+  return(dnorm(theta_zvezdica, theta, sigma, log=TRUE))
+}
+
+```
+
+```{r implementiran, message=FALSE, warning=FALSE}
+metropolis_hastings_log <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0){
   # n_itr = ponovitve
   # x = podatki
   # theta_zacetek = theta s katero zacnemo in jo posodabljamo
@@ -195,17 +369,17 @@ metropolis_hastings_burn_in <- function(n_itr, x, theta_zacetek, sigma, mu_0, si
     theta_zvezdica <- rnorm(1, theta[i - 1], sigma)
         
     # aposteriorna in verjetje s theta_zvezdica
-    aposteriorna_zvezdica <- apriorna_porazdelitev(theta_zvezdica, mu_0, sigma_0)
-    verjetje_zvezdica <- verjetje(theta_zvezdica, x, sigma)
-    q_zvezdica <- q(theta[i - 1], theta_zvezdica, sigma)
+    aposteriorna_zvezdica <- apriorna_porazdelitev_log(theta_zvezdica, mu_0, sigma_0)
+    verjetje_zvezdica <- verjetje_log(theta_zvezdica, x, sigma)
+    q_zvezdica <- q_log(theta[i - 1], theta_zvezdica, sigma)
         
     # aposteriorna in verjetje s theta_i
-    aposteriorna_i <- apriorna_porazdelitev(theta[i - 1], mu_0, sigma_0)
-    verjetje_i <- verjetje(theta[i - 1], x, sigma)
-    q_i <- q(theta_zvezdica, theta[i - 1], sigma)
+    aposteriorna_i <- apriorna_porazdelitev_log(theta[i - 1], mu_0, sigma_0)
+    verjetje_i <- verjetje_log(theta[i - 1], x, sigma)
+    q_i <- q_log(theta_zvezdica, theta[i - 1], sigma)
         
     # alpha
-    alpha <- min(1, (aposteriorna_zvezdica * verjetje_zvezdica * q_zvezdica) / (aposteriorna_i * verjetje_i * q_i))
+    alpha <- min(1, exp((aposteriorna_zvezdica + verjetje_zvezdica + q_zvezdica) - (aposteriorna_i + verjetje_i + q_i)))
          
     # sprejmemo ali zavrnemo
     if(runif(1) < alpha){
@@ -215,6 +389,90 @@ metropolis_hastings_burn_in <- function(n_itr, x, theta_zacetek, sigma, mu_0, si
       theta[i] <- theta[i - 1] # "reject"  -> theta_i
       }
     }
+
+  return(theta)
+}
+
+# Test algoritma
+theta <- metropolis_hastings_log(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
+```
+
+## Graf celotnega zaporedja
+Ponovno algoritem stestirava na podatkih iz vaj, z naslednjimi vrednostmi\
+$n_itr=40000,$\
+$x \dots$ vzorec visin (metri) studentov moskega spola \
+$\theta^0 = 1.5,$\
+$\sigma^2=0.1^2,$\
+$\mu_0 = 1.78,$\
+$\sigma_0^2 = 0.2^2,$\.
+
+Narisemo celotno dobljeno zaporedje $\theta^{(i)}$ (glede na iteracije $i$).
+```{r graf, echo=TRUE, fig.align="center", fig.height=4, message=FALSE, warning=FALSE}
+theta_zacetek <- 1.5
+theta <- metropolis_hastings_log(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
+
+df_log <- data.frame(theta = theta)
+
+ggplot(df_log, aes(x=1:nrow(df_log), y=theta)) +
+    geom_line() +
+    labs(title="Celotno dobljeno zaporedje (glede na iteracije i)",
+         x="Indeks",
+         y=expression(theta)) +
+    # zelena crta
+    geom_hline(yintercept = c(qnorm(0.025, mu.n, sigma.n),qnorm(0.975, mu.n, sigma.n)),
+               color = "green") +
+    theme_bw() + 
+    theme(panel.border = element_blank(),
+              panel.grid.minor = element_blank(), 
+              axis.line = element_line(colour = "black"),
+          legend.position = "none") 
+```
+
+Na sliki sva za boljso predstavo oznacila 95% referencni interval prave aposterirone porazdelitve (zeleni crti).
+
+## Prvih 500 in 5000 clenov zaporedja
+Graf prvih 500 in 5000 clenov.
+```{r prvi cleni, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+g1 <- ggplot(df_log %>% slice(1:500), aes(x=1:500, y=theta)) +
+    geom_line() +
+    labs(title="",
+         x="Indeks",
+         y=expression(theta)) +
+    theme_bw() + 
+    theme(panel.border = element_blank(),
+              panel.grid.minor = element_blank(), 
+              axis.line = element_line(colour = "black"),
+          legend.position = "none") 
+
+g2 <-ggplot(df_log %>% slice(1:5000), aes(x=1:5000, y=theta)) +
+    geom_line() +
+    labs(title="",
+         x="Indeks",
+         y=expression(theta)) +
+    theme_bw() + 
+    theme(panel.border = element_blank(),
+              panel.grid.minor = element_blank(), 
+              axis.line = element_line(colour = "black"),
+          legend.position = "none") 
+
+ggarrange(g1, g2,
+          labels = c("Prvih 500 clenov zaporedja", 
+                     "Prvih 5000 clenov zaporedja"),
+          font.label = list(size = 10),
+          ncol = 2) 
+```
+
+## Celotno zaporedje z ustreznim _burn-in_
+```{r metropolis_hastings_burn_in algoritem, message=FALSE, warning=FALSE}
+metropolis_hastings_log_burn_in <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0, burn_in = FALSE){
+  # n_itr = ponovitve
+  # x = podatki
+  # theta_zacetek = theta s katero zacnemo in jo posodabljamo
+  # sigma = sigma zacetnega modela
+  # mu_0 in sigma_0 = parametra apriorne porazdelitve
+  
+  # pridobimo theto
+  metropolis_hastings_log(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
   
   # v primeru burn in (odstranimo prvih 10% vzorca)
   n_burn_in = n_itr*0.1
@@ -223,22 +481,29 @@ metropolis_hastings_burn_in <- function(n_itr, x, theta_zacetek, sigma, mu_0, si
   return(theta)
 }
 
-
 # Test algoritma
-theta <- metropolis_hastings_burn_in(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
+theta <- metropolis_hastings_log_burn_in(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
+```
 
-# risanje
-df <- data.frame(theta = theta)
-ggplot(df, aes(x=1:length(theta), y=theta)) +
+```{r graf burn-in, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+# Risanje
+df_log_burnin <- data.frame(theta = theta)
+
+ggplot(df_log_burnin, aes(x=1:length(theta), y=theta)) +
     geom_line() +
     labs(title="Dobljeno zaporednje (prvih 10% zaporednja kot burn-in)",
          x="Indeks",
          y=expression(theta)) +
     # zelena crta
     geom_hline(yintercept = c(qnorm(0.025, mu.n, sigma.n),qnorm(0.975, mu.n, sigma.n)),
-               color = "green")
+               color = "green") +
+    theme_bw() + 
+    theme(panel.border = element_blank(),
+              panel.grid.minor = element_blank(), 
+              axis.line = element_line(colour = "black"),
+          legend.position = "none")
+  
 ```
-
 
 
 
