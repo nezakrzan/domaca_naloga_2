@@ -507,4 +507,90 @@ ggplot(df_log_burnin, aes(x=1:length(theta), y=theta)) +
 ```
 
 
+# Razlicne variance
+
+_4. Pri neki smiselni zacetni vrednosti pozenite algoritem pri nekaj razlicnih variancah za predlagalno porazdelitev. Pri izboru pretiravajte v obe smeri (spomnite se, kaksni so po velikosti nasi podatki), tako da boste graficno opazili razlike na prvih npr. 500 iteracijah. Rezultate predstavite:_ \
+
+  _- Za vsak primer narisite prvih nekaj (nekje med 500 in 5000) clenov in se celotno zaporedje._ \
+  _- Komentirajte razlike in zakaj do njih pride. Kaj in zakaj vas moti pri izbranih primerih?_ \
+  _- **Bonus vprasanje (ne steje v osnovne tocke domace naloge):** Kaksen bi bil v splosnem (ne vezano na nas vzorec) vas predlog glede izbora variance predlagalne porazdelitve oz. kaksen bi bil predlog za izbor koncnega zaporedja?_
+
+
+## Prvih nekaj clenov in celotno zaporedje
+
+```{r funkcija razlicna var, echo=FALSE}
+
+risi_razlicna_var <- function(theta_zacetek, sigma){
+  theta <- metropolis_hastings_log(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
+  df_log <- data.frame(theta = theta)
+  # celotno zaporedje
+  g1 <- ggplot(df_log, aes(x=1:nrow(df_log), y=theta)) +
+               geom_line() +
+               labs(x="Indeks",
+                    y=expression(theta)) +
+               # zelena crta
+               geom_hline(yintercept = c(qnorm(0.025, mu.n, sigma.n), 
+                                         qnorm(0.975, mu.n, sigma.n)),
+                         color = "green") +
+               # rdeca crta
+               geom_hline(yintercept = c(qnorm(0.0015, mu.n, sigma.n),
+                                         qnorm(0.9985, mu.n, sigma.n)),
+                         color = "red")
+               theme_bw() + 
+               theme(panel.border = element_blank(),
+                         panel.grid.minor = element_blank(), 
+                         axis.line = element_line(colour = "black"),
+                     legend.position = "none")
+  # 5000 clenov
+  g2 <-ggplot(df_log %>% slice(1:5000), aes(x=1:5000, y=theta)) +
+    geom_line() +
+    labs(title="",
+         x="Indeks",
+         y=expression(theta)) +
+    # zelena crta
+    geom_hline(yintercept = c(qnorm(0.025, mu.n, sigma.n),
+                              qnorm(0.975, mu.n, sigma.n)),
+               color = "green")+
+    # rdeca crta
+    geom_hline(yintercept = c(qnorm(0.0015, mu.n, sigma.n),
+                              qnorm(0.9985, mu.n, sigma.n)),
+               color = "red")
+    theme_bw() + 
+    theme(panel.border = element_blank(),
+              panel.grid.minor = element_blank(), 
+              axis.line = element_line(colour = "black"),
+          legend.position = "none") 
+
+  ggarrange(g1, g2, align = "hv",
+            labels = c("Prvih 5000 clenov zaporedja", 
+                       "Celotno zaporedje"),
+            font.label = list(size = 10),
+            ncol = 2)
+}
+```
+
+### $\sigma = 0.3$
+
+```{r sigma 0.3, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.95, 0.3)
+```
+
+### $\sigma = 0.2$
+
+```{r sigma 0.2, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.95, 0.2)
+```
+
+### $\sigma = 0.06$
+
+```{r sigma 0.06, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.95, 0.06)
+```
+
+### $\sigma = 0.03$
+
+```{r sigma 0.03, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.95, 0.03)
+```
+
 
