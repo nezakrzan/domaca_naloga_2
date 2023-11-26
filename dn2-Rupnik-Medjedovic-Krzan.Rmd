@@ -196,7 +196,7 @@ ggarrange(g1, g2,
 
 ## Celotno zaporedje z ustreznim _burn-in_
 ```{r metropolis_hastings_burn_in algoritem, message=FALSE, warning=FALSE}
-metropolis_hastings_burn_in <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0, burn_in = FALSE){
+metropolis_hastings_burn_in <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0){
   # n_itr = ponovitve
   # x = podatki
   # theta_zacetek = theta s katero zacnemo in jo posodabljamo
@@ -204,7 +204,7 @@ metropolis_hastings_burn_in <- function(n_itr, x, theta_zacetek, sigma, mu_0, si
   # mu_0 in sigma_0 = parametra apriorne porazdelitve
   
   # pridobimo theto
-  metropolis_hastings(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
+  theta <- metropolis_hastings(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
   
   # v primeru burn in (odstranimo prvih 10% vzorca)
   n_burn_in = n_itr*0.1
@@ -280,7 +280,7 @@ ggplot(df %>% slice(501:n()), aes(x=theta)) +
 
 
 ## Ocena parametra in 95% interval zaupanja za parameter
-Poglejmo si se oceno za parameter $\theta$ in pripadajoc interval zaupanja za nas algoritem. Zaradi simetrinosti porazdelitve lahko sva za oceno parametra $\theta$ izbrala povprecje.
+Poglejmo si se oceno za parameter $\theta$ in pripadajoc interval zaupanja za nas algoritem. Zaradi simetricnosti porazdelitve sva lahko za oceno parametra $\theta$ izbrala povprecje.
 
 ```{r ocena parametra in IZ, message=FALSE, warning=FALSE}
 mh_alg <- rbind(mean(df %>% slice(1001:n()) %>% unlist()), mu.n)
@@ -510,7 +510,6 @@ ggplot(df_log_burnin, aes(x=1:length(theta), y=theta)) +
 # Razlicne variance
 
 _4. Pri neki smiselni zacetni vrednosti pozenite algoritem pri nekaj razlicnih variancah za predlagalno porazdelitev. Pri izboru pretiravajte v obe smeri (spomnite se, kaksni so po velikosti nasi podatki), tako da boste graficno opazili razlike na prvih npr. 500 iteracijah. Rezultate predstavite:_ \
-
   _- Za vsak primer narisite prvih nekaj (nekje med 500 in 5000) clenov in se celotno zaporedje._ \
   _- Komentirajte razlike in zakaj do njih pride. Kaj in zakaj vas moti pri izbranih primerih?_ \
   _- **Bonus vprasanje (ne steje v osnovne tocke domace naloge):** Kaksen bi bil v splosnem (ne vezano na nas vzorec) vas predlog glede izbora variance predlagalne porazdelitve oz. kaksen bi bil predlog za izbor koncnega zaporedja?_
@@ -542,7 +541,7 @@ risi_razlicna_var <- function(theta_zacetek, sigma){
                          axis.line = element_line(colour = "black"),
                      legend.position = "none")
   # 5000 clenov
-  g2 <-ggplot(df_log %>% slice(1:5000), aes(x=1:5000, y=theta)) +
+  g2 <-ggplot(df_log %>% slice(1:1000), aes(x=1:1000, y=theta)) +
     geom_line() +
     labs(title="",
          x="Indeks",
@@ -561,36 +560,47 @@ risi_razlicna_var <- function(theta_zacetek, sigma){
               axis.line = element_line(colour = "black"),
           legend.position = "none") 
 
-  ggarrange(g1, g2, align = "hv",
-            labels = c("Prvih 5000 clenov zaporedja", 
+  ggarrange(g2, g1, align = "hv",
+            labels = c("Prvih 1000 clenov zaporedja", 
                        "Celotno zaporedje"),
             font.label = list(size = 10),
             ncol = 2)
 }
 ```
 
-### $\sigma = 0.3$
+### $\sigma = 1$
 
-```{r sigma 0.3, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
-risi_razlicna_var(1.95, 0.3)
+```{r sigma 1, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.5, 1)
+```
+
+
+### $\sigma = 0.5$
+
+```{r sigma 0.5, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.5, 0.5)
 ```
 
 ### $\sigma = 0.2$
 
 ```{r sigma 0.2, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
-risi_razlicna_var(1.95, 0.2)
+risi_razlicna_var(1.5, 0.2)
 ```
 
-### $\sigma = 0.06$
+### $\sigma = 0.05$
 
-```{r sigma 0.06, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
-risi_razlicna_var(1.95, 0.06)
+```{r sigma 0.05, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.5, 0.05)
 ```
 
-### $\sigma = 0.03$
+### $\sigma = 0.02$
 
-```{r sigma 0.03, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
-risi_razlicna_var(1.95, 0.03)
+```{r sigma 0.02, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.5, 0.02)
 ```
 
+### $\sigma = 0.005$
 
+```{r sigma 0.005, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.5, 0.005)
+```
