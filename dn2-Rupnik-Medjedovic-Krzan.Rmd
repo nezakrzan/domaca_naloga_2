@@ -353,7 +353,7 @@ q_log <- function(theta_zvezdica, theta, sigma){
 
 nato pa se algoritem
 ```{r implementiran, message=FALSE, warning=FALSE}
-metropolis_hastings_log <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0){
+metropolis_hastings_log <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0, delez = FALSE){
   # n_itr = ponovitve
   # x = podatki
   # theta_zacetek = theta s katero zacnemo in jo posodabljamo
@@ -364,6 +364,8 @@ metropolis_hastings_log <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_
   theta <- numeric(n_itr)
   # Zacetna vrednost thete
   theta[1] <- theta_zacetek
+  
+  koliko = 0
     
   for(i in 2:n_itr){
     # Nova theta
@@ -384,6 +386,7 @@ metropolis_hastings_log <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_
          
     # sprejmemo ali zavrnemo
     if(runif(1) < alpha){
+        koliko = koliko + 1
         theta[i] <- theta_zvezdica # "accept" -> min(1, A)
         } 
     else{
@@ -391,7 +394,11 @@ metropolis_hastings_log <- function(n_itr, x, theta_zacetek, sigma, mu_0, sigma_
       }
     }
 
-  return(theta)
+  if (delez){
+    return(c(theta, koliko/n_itr))
+  } else{
+    return(theta)
+  }
 }
 
 # Test algoritma
@@ -568,6 +575,12 @@ risi_razlicna_var <- function(theta_zacetek, sigma){
 }
 ```
 
+### $\sigma = 2$
+
+```{r sigma 2, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.5, 2)
+```
+
 ### $\sigma = 1$
 
 ```{r sigma 1, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
@@ -587,6 +600,12 @@ risi_razlicna_var(1.5, 0.5)
 risi_razlicna_var(1.5, 0.2)
 ```
 
+### $\sigma = 0.1$
+
+```{r sigma 0.1, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.5, 0.1)
+```
+
 ### $\sigma = 0.05$
 
 ```{r sigma 0.05, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
@@ -604,3 +623,31 @@ risi_razlicna_var(1.5, 0.02)
 ```{r sigma 0.005, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 risi_razlicna_var(1.5, 0.005)
 ```
+
+
+## Komentar razlik
+
+Prva razlika, ki jo najprej opazimo je odstopanje od referncnega 95% intervala zaupanja za pravo aposteriorno porazdelitev. Pri večji vrednosti $\sigma$ je pričakovano več vrednosti izven intervala, pri manjših pa vse ležijo znotraj intervala za dovolj pozne clene. Vzrok tega je simulacija kandidata $\theta^*$ iz porazdelitve $q(\cdot | \theta^{(i)})$, kjer imamo fiksno varianco ($\sigma^2$). 
+
+Ko izberemo večjo vrednost $\sigma$ opazimo, da se vrednost $\theta$ dostikrat v iteraciji ne spremeni, torej velja $\alpha < u$. Pri majhnem $\sigma$ vidimo, da potrebujemo kar nekaj iteracij dokler zaporedje ne začne konvergirati proti pravi vrednosti.
+
+Zgornje lahko opisemo tudi z deležem sprejema (acceptance rate). To pomeni, da si zabeležimo kolikokrat velja pogoj $u < \alpha$ in vrednost delimo s stevilom korakov. Pri tem velja ($\theta^{(i+1)} = \theta^*$). Idealni delež je priblizno $23%$. S tem si lahko tudi nekoliko pomagamo pri dolocitvi vrednosti $\sigma$:\
+  - visok delez sprejema: predlagana vrednost je zelo blizu trenutni vrednosti (premiki so zelo majhni) $\rightarrow$ potrebno je povecati varianco \
+  - nizek delez sprejema: imamo veliko zavrnitev (velja $\theta^{(i+1)} = \theta^{(i)}$) $\rightarrow$ potrebno je zmanjsati varianco
+
+Vrednosti deleza sprejma si lahko pogledamo v spodnji tabeli. Najvecja in najmanjsa vrednost samo zelo pretiravani in nerealni, vendar sta dodani za lazjo predstavo.
+
+```{r delez sprejema}
+vrednosti_sigma = c(2, 1, 0.5, 0.2, 0.05, 0.02, 0.005, 0.000001)
+vrednosti_delez_sprejema = NULL
+for (i in vrednosti_sigma){
+  vred = mean(replicate(10, metropolis_hastings_log(n_itr, x, theta_zacetek, i, mu_0, sigma_0, TRUE)[n_itr + 1]))
+  vrednosti_delez_sprejema = c(vrednosti_delez_sprejema, vred)
+}
+df_delez = data.frame("sigma" = vrednosti_sigma,
+                      "delez_sprejema" = vrednosti_delez_sprejema)
+
+kable(df_delez, digits=c(6,4), booktabs=T) %>% 
+    kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
+```
+
