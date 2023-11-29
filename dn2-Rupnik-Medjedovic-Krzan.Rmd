@@ -627,15 +627,15 @@ risi_razlicna_var(1.5, 0.005)
 
 ## Komentar razlik
 
-Prva razlika, ki jo najprej opazimo je odstopanje od referncnega 95% intervala zaupanja za pravo aposteriorno porazdelitev. Pri večji vrednosti $\sigma$ je pričakovano več vrednosti izven intervala, pri manjših pa vse ležijo znotraj intervala za dovolj pozne clene. Vzrok tega je simulacija kandidata $\theta^*$ iz porazdelitve $q(\cdot | \theta^{(i)})$, kjer imamo fiksno varianco ($\sigma^2$). 
+Prva razlika, ki jo najprej opazimo, je odstopanje od referncnega 95% intervala zaupanja za pravo aposteriorno porazdelitev. Pri vecji vrednosti $\sigma$ je pričakovano več vrednosti izven intervala, pri manjših pa za dvolj pozne clene vse ležijo znotraj intervala. Vzrok tega je simulacija kandidata $\theta^*$ iz porazdelitve $q(\cdot | \theta^{(i)})$, kjer imamo fiksno varianco ($\sigma^2$). 
 
-Ko izberemo večjo vrednost $\sigma$ opazimo, da se vrednost $\theta$ dostikrat v iteraciji ne spremeni, torej velja $\alpha < u$. Pri majhnem $\sigma$ vidimo, da potrebujemo kar nekaj iteracij dokler zaporedje ne začne konvergirati proti pravi vrednosti.
+Ko izberemo večjo vrednost $\sigma$ opazimo, da se vrednost $\theta$ dostikrat v iteraciji ne spremeni, torej velja $\alpha < u$. Pri majhnem $\sigma$ vidimo, da potrebujemo kar nekaj iteracij, da zaporedje začne konvergirati proti pravi vrednosti.
 
 Zgornje lahko opisemo tudi z deležem sprejema (acceptance rate). To pomeni, da si zabeležimo kolikokrat velja pogoj $u < \alpha$ in vrednost delimo s stevilom korakov. Pri tem velja ($\theta^{(i+1)} = \theta^*$). Idealni delež je priblizno $23%$. S tem si lahko tudi nekoliko pomagamo pri dolocitvi vrednosti $\sigma$:\
-  - visok delez sprejema: predlagana vrednost je zelo blizu trenutni vrednosti (premiki so zelo majhni) $\rightarrow$ potrebno je povecati varianco \
-  - nizek delez sprejema: imamo veliko zavrnitev (velja $\theta^{(i+1)} = \theta^{(i)}$) $\rightarrow$ potrebno je zmanjsati varianco
+  - visok delez sprejema: predlagana vrednost je zelo blizu trenutni vrednosti (premiki so zelo majhni) $\rightarrow$ potrebno je povecati varianco; \
+  - nizek delez sprejema: imamo veliko zavrnitev (velja $\theta^{(i+1)} = \theta^{(i)}$) $\rightarrow$ potrebno je zmanjsati varianco.
 
-Vrednosti deleza sprejma si lahko pogledamo v spodnji tabeli. Najvecja in najmanjsa vrednost samo zelo pretiravani in nerealni, vendar sta dodani za lazjo predstavo.
+Vrednosti deleza sprejma si lahko pogledamo v spodnji tabeli. Najvecja in najmanjsa vrednost sta zelo pretirani in nerealni, vendar sta dodani za lazjo predstavo.
 
 ```{r delez sprejema}
 vrednosti_sigma = c(2, 1, 0.5, 0.2, 0.05, 0.02, 0.005, 0.000001)
