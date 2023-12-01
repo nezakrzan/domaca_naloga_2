@@ -525,7 +525,6 @@ _4. Pri neki smiselni zacetni vrednosti pozenite algoritem pri nekaj razlicnih v
 ## Prvih nekaj clenov in celotno zaporedje
 
 ```{r funkcija razlicna var, echo=FALSE}
-
 risi_razlicna_var <- function(theta_zacetek, sigma){
   theta <- metropolis_hastings_log(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
   df_log <- data.frame(theta = theta)
@@ -623,7 +622,11 @@ risi_razlicna_var(1.5, 0.02)
 ```{r sigma 0.005, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 risi_razlicna_var(1.5, 0.005)
 ```
+### $\sigma = 0.0001$
 
+```{r sigma 0.0001, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.5, 0.0001)
+```
 
 ## Komentar razlik
 
@@ -635,7 +638,7 @@ Zgornje lahko opisemo tudi z delezem sprejema (acceptance rate). To pomeni, da s
   - visok delez sprejema: predlagana vrednost je zelo blizu trenutni vrednosti (premiki so zelo majhni) $\rightarrow$ potrebno je povecati varianco; \
   - nizek delez sprejema: imamo veliko zavrnitev (velja $\theta^{(i+1)} = \theta^{(i)}$) $\rightarrow$ potrebno je zmanjsati varianco.
 
-Teoreticno so pokazali, da je idealni delez sprejema za enodimenzionalno normalno porazdelitev 0.45-0.5, ta vrednost pa se priblizuje 0.23, ko se stevilo dimenzij povecuje. Ponavadi predlagano porazdelitev nastavimo tako, da algoritem sprejme priblizno 30% predlaganih vrednosti. 
+Teoreticno so pokazali, da je idealni delez sprejema za enodimenzionalno normalno porazdelitev $0.45-0.5$, ta vrednost pa se priblizuje 0.23, ko se stevilo dimenzij povecuje. Ponavadi predlagano porazdelitev nastavimo tako, da algoritem sprejme priblizno 30% predlaganih vrednosti. 
 
 <!-- https://www.cs.cmu.edu/~epxing/Class/10708-17/notes-17/10708-scribe-lecture16.pdf -->
 <!-- http://people.ee.duke.edu/~lcarin/baystat5.pdf -->
@@ -653,4 +656,6 @@ Teoreticno so pokazali, da je idealni delez sprejema za enodimenzionalno normaln
 # kable(df_delez, digits=c(6,4), booktabs=T) %>% 
 #     kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
 ```
+
+
 
