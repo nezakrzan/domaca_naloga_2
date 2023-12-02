@@ -244,19 +244,6 @@ Na sliki sva za boljso predstavo oznacila 95% referencni interval prave aposteri
 Za tako izbrano zaporedje sva graficno predstavila aposteriorno porazdelitev in jo graficno primerjajla s pravo aposteriorno porazdelitvijo.
 
 ```{r graf - aposteriorna porazdelitev in prava aposteriorna porazdelitev, eval=TRUE, echo=FALSE, fig.align="center", fig.height=4, message=FALSE, warning=FALSE, results="markup"}
-#ggplot(df %>% slice(501:n()), aes(x=theta)) +
-    #geom_histogram(fill = "grey", color = "black") +
-    #labs(x=expression(theta),
-         #y="Frekvenca",
-         #title="Aposteriorna porazdelitev",
-         #subtitle="pridobljena z Metropolis-Hastings algoritmom brez burn-in dela") +
-    #theme_bw() + 
-    #theme(panel.border = element_blank(),
-              #panel.grid.minor = element_blank(), 
-              #axis.line = element_line(colour = "black"),
-          #legend.position = "none")
-
-# Ne vem cist tocno al rabva aposteriorno samo predstavt graficno al lahko vse skup v enem grafu, zato je zgori graf zakomentiran
 
 # Graf aposteriorne porazdelitve in prave aposteriorne porazdelitve
 ggplot(df %>% slice(501:n()), aes(x=theta)) +
@@ -331,7 +318,7 @@ verjetje(0, x, sigma)
 apriorna_porazdelitev(0, mu_0, sigma_0)
 ```
 
-Vidimo, da je verjetje enako $0$, torej takoj delimo z $0$. Zato bomo celoten algoritem implementirali z logaritomom, da bo delovalo tudi pri zelo nesmiselnih zacetnih vrednostih.
+Vidimo, da je verjetje enako $0$, torej takoj delimo z $0$. Zato bomo celoten algoritem implementirali z logaritmom, da bo delovalo tudi pri zelo nesmiselnih zacetnih vrednostih.
 
 Najprej ustrezno implementirava vse potrebne funkcije za algoritem.
 ```{r funkcije potrebne za algoritem z log, message=FALSE, warning=FALSE}
