@@ -23,6 +23,7 @@ library(knitr)
 library(dplyr)
 library(ggpubr)
 library(kableExtra)
+library(latex2exp)
 ```
 
 _Za primer iz 3. sklopa (uporabite zgornje podatke, model z $\sigma^2=0.1^2$ in zgornjo apriorno porazdelitev z $\mu_0=1.78$ in $\sigma_0^2 = 0.2^2$ -- ti parametri so fiksni) aproksimirajte aposteriorno porazdelitev s pomocjo algoritma Metropolis-Hastings, kjer sledite spodnjim korakom._
@@ -521,35 +522,40 @@ _4. Pri neki smiselni zacetni vrednosti pozenite algoritem pri nekaj razlicnih v
   _- Komentirajte razlike in zakaj do njih pride. Kaj in zakaj vas moti pri izbranih primerih?_ \
   _- **Bonus vprasanje (ne steje v osnovne tocke domace naloge):** Kaksen bi bil v splosnem (ne vezano na nas vzorec) vas predlog glede izbora variance predlagalne porazdelitve oz. kaksen bi bil predlog za izbor koncnega zaporedja?_
 
-
 ## Prvih nekaj clenov in celotno zaporedje
 
 ```{r funkcija razlicna var, echo=FALSE}
 risi_razlicna_var <- function(theta_zacetek, sigma){
   theta <- metropolis_hastings_log(n_itr, x, theta_zacetek, sigma, mu_0, sigma_0)
   df_log <- data.frame(theta = theta)
+
+  
   # celotno zaporedje
   g1 <- ggplot(df_log, aes(x=1:nrow(df_log), y=theta)) +
-               geom_line() +
-               labs(x="Indeks",
-                    y=expression(theta)) +
-               # zelena crta
-               geom_hline(yintercept = c(qnorm(0.025, mu.n, sigma.n), 
-                                         qnorm(0.975, mu.n, sigma.n)),
-                         color = "green") +
-               # rdeca crta
-               geom_hline(yintercept = c(qnorm(0.0015, mu.n, sigma.n),
-                                         qnorm(0.9985, mu.n, sigma.n)),
-                         color = "red")
-               theme_bw() + 
-               theme(panel.border = element_blank(),
-                         panel.grid.minor = element_blank(), 
-                         axis.line = element_line(colour = "black"),
-                     legend.position = "none")
-  # 5000 clenov
+    geom_line() +
+    labs(x="Indeks",
+         y=expression(theta),
+         title = "Celotno zaporedje",
+         subtitle = paste(expression(sigma),"=", sigma)) +
+    # zelena crta
+    geom_hline(yintercept = c(qnorm(0.025, mu.n, sigma.n), 
+                            qnorm(0.975, mu.n, sigma.n)),
+               color = "green") +
+    # rdeca crta
+    geom_hline(yintercept = c(qnorm(0.0015, mu.n, sigma.n),
+                            qnorm(0.9985, mu.n, sigma.n)),
+               color = "red") +
+    theme_bw() + 
+    theme(panel.border = element_blank(),
+          panel.grid.minor = element_blank(), 
+          axis.line = element_line(colour = "black"),
+          legend.position = "none") 
+  
+  # 1000 clenov
   g2 <-ggplot(df_log %>% slice(1:1000), aes(x=1:1000, y=theta)) +
     geom_line() +
-    labs(title="",
+    labs(title = "Prvih 1000 clenov zaporedja",
+         subtitle = paste(expression(sigma), "=", sigma),
          x="Indeks",
          y=expression(theta)) +
     # zelena crta
@@ -559,103 +565,97 @@ risi_razlicna_var <- function(theta_zacetek, sigma){
     # rdeca crta
     geom_hline(yintercept = c(qnorm(0.0015, mu.n, sigma.n),
                               qnorm(0.9985, mu.n, sigma.n)),
-               color = "red")
+               color = "red") +
     theme_bw() + 
     theme(panel.border = element_blank(),
-              panel.grid.minor = element_blank(), 
-              axis.line = element_line(colour = "black"),
-          legend.position = "none") 
+          panel.grid.minor = element_blank(), 
+          axis.line = element_line(colour = "black"),
+          legend.position = "none")
 
   ggarrange(g2, g1, align = "hv",
-            labels = c("Prvih 1000 clenov zaporedja", 
-                       "Celotno zaporedje"),
             font.label = list(size = 10),
             ncol = 2)
 }
 ```
 
-### $\sigma = 2$
-
-```{r sigma 2, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
-risi_razlicna_var(1.5, 2)
+```{r sigma 50, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.5, 50)
 ```
 
-### $\sigma = 1$
+```{r sigma 10, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.5, 10)
+```
+
+```{r sigma 5, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.5, 5)
+```
 
 ```{r sigma 1, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 risi_razlicna_var(1.5, 1)
 ```
 
-
-### $\sigma = 0.5$
-
 ```{r sigma 0.5, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 risi_razlicna_var(1.5, 0.5)
 ```
-
-### $\sigma = 0.2$
 
 ```{r sigma 0.2, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 risi_razlicna_var(1.5, 0.2)
 ```
 
-### $\sigma = 0.1$
-
 ```{r sigma 0.1, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 risi_razlicna_var(1.5, 0.1)
 ```
-
-### $\sigma = 0.05$
 
 ```{r sigma 0.05, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 risi_razlicna_var(1.5, 0.05)
 ```
 
-### $\sigma = 0.02$
-
 ```{r sigma 0.02, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 risi_razlicna_var(1.5, 0.02)
 ```
 
-### $\sigma = 0.005$
-
 ```{r sigma 0.005, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 risi_razlicna_var(1.5, 0.005)
 ```
-### $\sigma = 0.0001$
 
+```{r sigma 0.0005, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.5, 0.0005)
+```
 ```{r sigma 0.0001, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 risi_razlicna_var(1.5, 0.0001)
+```
+
+```{r sigma 0.00001, echo=FALSE, fig.align='center', fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+risi_razlicna_var(1.5, 0.00001)
 ```
 
 ## Komentar razlik
 
 Prva razlika, ki jo najprej opazimo, je odstopanje od referncnega 95% intervala zaupanja za pravo aposteriorno porazdelitev. Pri vecji vrednosti $\sigma$ je pricakovano vec vrednosti izven intervala, pri manjsih pa za dvolj pozne clene vse lezijo znotraj intervala. Vzrok tega je simulacija kandidata $\theta^*$ iz porazdelitve $q(\cdot | \theta^{(i)})$, kjer imamo fiksno varianco ($\sigma^2$). 
 
-Ko izberemo vecjo vrednost $\sigma$ opazimo, da se vrednost $\theta$ dostikrat v iteraciji ne spremeni, torej velja $\alpha < u$. Pri majhnem $\sigma$ vidimo, da potrebujemo kar nekaj iteracij, da zaporedje zacne konvergirati proti pravi vrednosti.
+Ko izberemo vecjo vrednost $\sigma$ opazimo, da se vrednost $\theta$ dostikrat v iteraciji ne spremeni, torej velja $\alpha < u$. Pri majhnem $\sigma$ vidimo, da potrebujemo kar nekaj iteracij, da zaporedje zacne konvergirati proti pravi vrednosti. 
+
+Na primer v primeru, ko je $\sigma = 0.00001$ konvergence sploh ne dosezemo, pri ostalih dveh manjših variancah ($0.0005$ in $0.0001$), pa je videti pri izrisu celotnega zaporedja, da konvergira, sicer pozno, k  $\theta$, ki jo iscemo. Pri vecjih $\sigma$($5, 10, 50$) pa lahko opazimo, da zaporedje nekajkrat ostane na isti $\theta$, saj imamo ob vecji varianci vec moznosti za izbiro slabse $\theta$ od trenutne in zato ne sprejmemo nove $\theta$. To se bolje vidi na grafih, kjer je prikazano prvih 1000 clenov zaporedja. 
 
 Zgornje lahko opisemo tudi z delezem sprejema (acceptance rate). To pomeni, da si zabelezimo kolikokrat velja pogoj $u < \alpha$ in vrednost delimo s stevilom korakov. Pri tem velja ($\theta^{(i+1)} = \theta^*$). S tem si lahko tudi nekoliko pomagamo pri dolocitvi vrednosti $\sigma$:\
   - visok delez sprejema: predlagana vrednost je zelo blizu trenutni vrednosti (premiki so zelo majhni) $\rightarrow$ potrebno je povecati varianco; \
   - nizek delez sprejema: imamo veliko zavrnitev (velja $\theta^{(i+1)} = \theta^{(i)}$) $\rightarrow$ potrebno je zmanjsati varianco.
 
-Teoreticno so pokazali, da je idealni delez sprejema za enodimenzionalno normalno porazdelitev $0.45-0.5$, ta vrednost pa se priblizuje 0.23, ko se stevilo dimenzij povecuje. Ponavadi predlagano porazdelitev nastavimo tako, da algoritem sprejme priblizno 30% predlaganih vrednosti. 
-
-<!-- https://www.cs.cmu.edu/~epxing/Class/10708-17/notes-17/10708-scribe-lecture16.pdf -->
-<!-- http://people.ee.duke.edu/~lcarin/baystat5.pdf -->
+Teoreticno so pokazali, da je idealni delez sprejema za enodimenzionalno normalno porazdelitev $0.45-0.5$, ta vrednost pa se priblizuje 0.23, ko se stevilo dimenzij povecuje. Ponavadi predlagano porazdelitev nastavimo tako, da algoritem sprejme priblizno 30% predlaganih vrednosti.
 
 ```{r delez sprejema}
-# vrednosti_sigma = c(2, 1, 0.5, 0.2, 0.05, 0.02, 0.005, 0.000001)
-# vrednosti_delez_sprejema = NULL
-# for (i in vrednosti_sigma){
-#   vred = mean(replicate(10, metropolis_hastings_log(n_itr, x, theta_zacetek, i, mu_0, sigma_0, TRUE)[n_itr + 1]))
-#   vrednosti_delez_sprejema = c(vrednosti_delez_sprejema, vred)
-# }
-# df_delez = data.frame("sigma" = vrednosti_sigma,
-#                       "delez_sprejema" = vrednosti_delez_sprejema)
-# 
-# kable(df_delez, digits=c(6,4), booktabs=T) %>% 
-#     kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
+ vrednosti_sigma = c(10, 1, 0.5, 0.05, 0.0001)
+ vrednosti_delez_sprejema = NULL
+ for (i in vrednosti_sigma){
+   vred = mean(replicate(10, metropolis_hastings_log(n_itr, x, theta_zacetek, i, mu_0, sigma_0, TRUE)[n_itr + 1]))
+   vrednosti_delez_sprejema = c(vrednosti_delez_sprejema, vred)
+ }
+ df_delez = data.frame("sigma" = vrednosti_sigma,
+                       "delez_sprejema" = vrednosti_delez_sprejema)
+ 
+ kable(df_delez, digits=c(4,4), booktabs=T) %>% 
+     kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
 ```
 
-
+Torej zelimo si cim hitrejse konvergence in, da sprejmemo cim "boljsi" $\theta$ za cim boljsi opis aposteriorne porazdelitve. Posledicno, zadeve pripravimo v odvisnosti nasega problema, ker hitrejso konvergenco pridobimo z vecjo varianco(do neke tocke - grafi pri $\sigma = \{0.1, 0.2, 0.5, 1\}$), porazdelitev pa je bolje opisana, ce je varianca manjsa(veckrat sprejmemo novo $\theta$). 
 
